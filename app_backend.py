@@ -47,10 +47,12 @@ def webhook():
                 elif 'type' in msg and msg['type'] == 'text' and isinstance(msg.get('text'), str):
                     message_text = msg['text']
 
-                if 'sender' in data and 'wa_id' in data['sender']:
+                if isinstance(data.get('sender'), dict) and 'wa_id' in data['sender']:
                     sender_number = data['sender']['wa_id']
-                elif 'from' in msg:
+                elif isinstance(msg, dict) and 'from' in msg:
                     sender_number = msg['from']
+                elif 'waId' in data:
+                    sender_number = data['waId']
 
             elif 'text' in data and isinstance(data['text'], str):
                 message_text = data['text']
@@ -118,5 +120,6 @@ def webhook():
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
