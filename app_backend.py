@@ -6,10 +6,8 @@ import json
 
 app = Flask(__name__)
 
-# --- مسار ملف المهام اليومية ---
 TASKS_FILE = "tasks.csv"
 
-# --- تحميل المهام ---
 def load_tasks_from_csv():
     expected_cols = ["التاريخ", "المشرف", "المهمة", "الملاحظات"]
     try:
@@ -28,11 +26,9 @@ def load_tasks_from_csv():
         print(f"Unexpected error reading {TASKS_FILE}: {e}")
         return pd.DataFrame(columns=expected_cols)
 
-# --- حفظ المهام ---
 def save_tasks_to_csv(df):
     df.to_csv(TASKS_FILE, index=False)
 
-# --- نقطة استلام رسائل الواتساب ---
 @app.route('/webhook', methods=['POST'])
 def webhook():
     if request.method == 'POST':
@@ -46,15 +42,19 @@ def webhook():
         try:
             if 'messages' in data and len(data['messages']) > 0:
                 msg = data['messages'][0]
-                if 'text' in msg and 'body' in msg['text']:
+                if 'text' in msg and isinstance(msg['text'], dict) and 'body' in msg['text']:
                     message_text = msg['text']['body']
-                elif 'type' in msg and msg['type'] == 'text' and 'text' in msg:
-                    message_text = msg['text']['body']
+                elif 'type' in msg and msg['type'] == 'text' and isinstance(msg.get('text'), str):
+                    message_text = msg['text']
 
                 if 'sender' in data and 'wa_id' in data['sender']:
                     sender_number = data['sender']['wa_id']
                 elif 'from' in msg:
                     sender_number = msg['from']
+
+            elif 'text' in data and isinstance(data['text'], str):
+                message_text = data['text']
+                sender_number = data.get('waId', 'غير معروف')
 
             elif 'data' in data and 'message' in data['data'] and 'text' in data['data']['message']:
                 message_text = data['data']['message']['text']
@@ -115,8 +115,8 @@ def webhook():
 
     return jsonify({"status": "error", "message": "Method not allowed"}), 405
 
-# --- تشغيل التطبيق ---
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
